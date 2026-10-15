@@ -14,6 +14,15 @@ class MainActivity: FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
+                "dialUssd" -> {
+                    val code = call.argument<String>("code")
+                    if (code != null) {
+                        dialUssdCode(code)
+                        result.success(true)
+                    } else {
+                        result.error("UNAVAILABLE", "Code not provided", null)
+                    }
+                }
                 "openNotificationSettings" -> {
                     val intent = Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
                     startActivity(intent)
@@ -28,6 +37,25 @@ class MainActivity: FlutterActivity() {
                     result.notImplemented()
                 }
             }
+        }
+    }
+
+    private fun dialUssdCode(ussdCode: String) {
+        var encoded = ""
+        for (i in 0 until ussdCode.length) {
+            val c = ussdCode[i]
+            if (c == '#') {
+                encoded += Uri.encode("#")
+            } else {
+                encoded += c
+            }
+        }
+        val intent = Intent(Intent.ACTION_CALL, Uri.parse("tel:$encoded"))
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
